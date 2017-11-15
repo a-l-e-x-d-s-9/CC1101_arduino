@@ -151,14 +151,159 @@ On Oct 22, 2016 10:07 PM, "Simon Monk" <srmonk@gmail.com> wrote:
 #define CC1101_TXFIFO       0x3F
 #define CC1101_RXFIFO       0x3F
 
-//*************************************** pins **************************************************//
-#define SCK_PIN   13
-#define MISO_PIN  12
-#define MOSI_PIN  11
-#define SS_PIN    10
-#define GDO0	2
-#define GDO2	9
 //************************************* class **************************************************//
+
+enum PKTCTRL0_LENGTH_CONFIG_T
+{ 
+    PKTCTRL0_LENGTH_CONFIG_FIXED    = 0,
+    PKTCTRL0_LENGTH_CONFIG_VARIABLE = 1,
+    PKTCTRL0_LENGTH_CONFIG_INFINITE = 2,
+    PKTCTRL0_LENGTH_CONFIG_RESERVED = 3,
+    
+};
+
+#define PKTCTRL0_LENGTH_CONFIG_BITS 2
+
+enum PKTCTRL0_CRC_EN_T
+{ 
+    PKTCTRL0_CRC_EN_ENABLED   = 1,
+    PKTCTRL0_CRC_EN_DISABLED  = 0,
+};
+
+#define PKTCTRL0_CRC_EN_BITS 1
+
+enum PKTCTRL0_PKT_FORMAT_T
+{ 
+    PKTCTRL0_PKT_FORMAT_USE_FIFO        = 0,
+    PKTCTRL0_PKT_FORMAT_SYNCHRONOUS     = 1,
+    PKTCTRL0_PKT_FORMAT_RANDOM          = 2,
+    PKTCTRL0_PKT_FORMAT_ASYNCHRONOUS    = 3,
+};
+
+#define PKTCTRL0_PKT_FORMAT_BITS 2
+
+enum PKTCTRL0_WHITE_DATA_T
+{ 
+    PKTCTRL0_WHITE_DATA_ON   = 1,
+    PKTCTRL0_WHITE_DATA_OFF  = 0,
+};
+
+#define PKTCTRL0_WHITE_DATA_BITS 1
+
+#define PKTCTRL0_RESERVED_0_BITS 1
+#define PKTCTRL0_RESERVED_1_BITS 1
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        PKTCTRL0_LENGTH_CONFIG_T    LENGTH_CONFIG   : PKTCTRL0_LENGTH_CONFIG_BITS;
+        PKTCTRL0_CRC_EN_T           CRC_EN          : PKTCTRL0_CRC_EN_BITS;
+        byte                        RESERVED_0      : PKTCTRL0_RESERVED_0_BITS;
+        PKTCTRL0_PKT_FORMAT_T       PKT_FORMAT      : PKTCTRL0_PKT_FORMAT_BITS;
+        PKTCTRL0_WHITE_DATA_T       WHITE_DATA      : PKTCTRL0_WHITE_DATA_BITS;
+        byte                        RESERVED_1      : PKTCTRL0_RESERVED_1_BITS;
+    } bits;
+    byte raw;
+} PKTCTRL0_DATA_T;
+
+
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    SYNC_MODE       : 3;
+        byte    MANCHESTER_EN   : 1;
+        byte    MOD_FORMAT      : 3;
+        byte    DEM_DCFILT_OFF  : 1;
+    } bits;
+    byte raw;
+} MDMCFG2_DATA_T;
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    CHANSPC_E       : 2;
+        byte    RESERVED_0      : 2;
+        byte    NUM_PREAMBLE    : 3;
+        byte    FEC_EN          : 1;
+    } bits;
+    byte raw;
+} MDMCFG1_DATA_T;
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    MARC_STATE      : 5;
+        byte    RESERVED_0      : 3;
+    } bits;
+    byte raw;
+} MARCSTATE_DATA_T;
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    NUM_TXBYTES      : 7;
+        byte    TXFIFO_UNDERFLOW : 1;
+    } bits;
+    byte raw;
+} TXBYTES_DATA_T;
+
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    NUM_RXBYTES      : 7;
+        byte    RXFIFO_OVERFLOW  : 1;
+    } bits;
+    byte raw;
+} RXBYTES_DATA_T;
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    GDO0            : 1;
+        byte    RESERVED_0      : 1;
+        byte    GDO2            : 1;
+        byte    SFD             : 1;
+        byte    CCA             : 1;
+        byte    PQT_REACHED     : 1;
+        byte    CS              : 1;
+        byte    CRC_OK          : 1;
+    } bits;
+    byte raw;
+} PKTSTATUS_DATA_T;
+
+
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    GDO0_CFG            : 6;
+        byte    GDO0_INV            : 1;
+        byte    TEMP_SENSOR_ENABLE  : 1;
+    } bits;
+    byte raw;
+} IOCFG0_DATA_T;
+
+typedef union __attribute__((__packed__)) 
+{
+    struct
+    {
+        byte    GDO2_CFG            : 6;
+        byte    GDO2_INV            : 1;
+        byte    RESERVED_0          : 1;
+    } bits;
+    byte raw;
+} IOCFG2_DATA_T;
+
 class ELECHOUSE_CC1101
 {
 	private:
@@ -174,13 +319,33 @@ class ELECHOUSE_CC1101
 		void SpiReadBurstReg(byte addr, byte *buffer, byte num);
 		byte SpiReadStatus(byte addr);
 		void RegConfigSettings(byte f);
+		byte SCK_PIN    = 13;
+		byte MISO_PIN   = 12;
+		byte MOSI_PIN   = 11;
+		byte SS_PIN     = 10;
+		byte GDO0       = 8;
+		// byte GDO2    = 9;
+		byte FREQ       = F_433;
+
+		PKTCTRL0_DATA_T pktctrl_org;
+		MDMCFG1_DATA_T  mdmcfg1_org;
+		MDMCFG2_DATA_T  mdmcfg2_org;
+		IOCFG0_DATA_T   iocfg0_org;
+		byte            frend0_org;
 	public:
-		void Init(void);
-		void Init(byte f);
+		void Init( void );
+		void Init( byte freq_pin );
+		void Init( byte freq_pin, byte sck_pin, byte mosi_pin, byte miso_pin, byte ss_pin, byte gd00_pin );
 		void SendData(byte *txBuffer, byte size);
 		void SetReceive(void);
 		byte CheckReceiveFlag(void);
 		byte ReceiveData(byte *rxBuffer);
+
+
+		void cc1101_single_wire_start( void );
+		void cc1101_single_wire_exit( void );
+		void cc1101_single_wire_tx_start( void );
+		void cc1101_single_wire_tx_end( void );
 };
 
 extern ELECHOUSE_CC1101 ELECHOUSE_cc1101;

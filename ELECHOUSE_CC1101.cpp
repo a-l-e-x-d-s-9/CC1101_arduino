@@ -1,4 +1,4 @@
-/*
+
 /*
 
 	This library was originally copyright of Michael at elechouse.com but permision was
@@ -52,10 +52,10 @@ byte PaTabel[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 void ELECHOUSE_CC1101::SpiInit(void)
 {
   // initialize the SPI pins
-  pinMode(SCK_PIN, OUTPUT);
+  pinMode(SCK_PIN,  OUTPUT);
   pinMode(MOSI_PIN, OUTPUT);
   pinMode(MISO_PIN, INPUT);
-  pinMode(SS_PIN, OUTPUT);
+  pinMode(SS_PIN,   OUTPUT);
 
   // enable SPI Master, MSB, SPI mode 0, FOSC/4
   SpiMode(0);
@@ -103,7 +103,7 @@ byte ELECHOUSE_CC1101::SpiTransfer(byte value)
 void ELECHOUSE_CC1101::GDO_Set (void)
 {
 	pinMode(GDO0, INPUT);
-	pinMode(GDO2, INPUT);
+//	pinMode(GDO2, INPUT);
 }
 
 /****************************************************************
@@ -133,14 +133,17 @@ void ELECHOUSE_CC1101::Reset (void)
 ****************************************************************/
 void ELECHOUSE_CC1101::Init(void)
 {
-	SpiInit();										//spi initialization
-	GDO_Set();										//GDO set
-	digitalWrite(SS_PIN, HIGH);
-	digitalWrite(SCK_PIN, HIGH);
-	digitalWrite(MOSI_PIN, LOW);
-	Reset();										//CC1101 reset
-	RegConfigSettings(F_433);						//CC1101 register config
-	SpiWriteBurstReg(CC1101_PATABLE,PaTabel,8);		//CC1101 PATABLE config
+    SpiInit();                                      //spi initialization
+    GDO_Set();                                      //GDO set
+    digitalWrite(SS_PIN, HIGH);
+    digitalWrite(SCK_PIN, HIGH);
+    digitalWrite(MOSI_PIN, LOW);
+    Reset();                                        //CC1101 reset
+
+
+    RegConfigSettings(FREQ);                        //CC1101 register config
+
+    SpiWriteBurstReg(CC1101_PATABLE,PaTabel,8);     //CC1101 PATABLE config
 }
 
 /****************************************************************
@@ -149,18 +152,22 @@ void ELECHOUSE_CC1101::Init(void)
 *INPUT        :none
 *OUTPUT       :none
 ****************************************************************/
-void ELECHOUSE_CC1101::Init(byte f)
+void ELECHOUSE_CC1101::Init( byte freq_pin )
 {
-	SpiInit();										//spi initialization
-	GDO_Set();										//GDO set
-	digitalWrite(SS_PIN, HIGH);
-	digitalWrite(SCK_PIN, HIGH);
-	digitalWrite(MOSI_PIN, LOW);
-	Reset();										//CC1101 reset
-	RegConfigSettings(f);							//CC1101 register config
-	SpiWriteBurstReg(CC1101_PATABLE,PaTabel,8);		//CC1101 PATABLE config
+    this->FREQ = freq_pin;
+    Init();
 }
 
+void ELECHOUSE_CC1101::Init( byte freq_pin, byte sck_pin, byte mosi_pin, byte miso_pin, byte ss_pin, byte gd00_pin )
+{
+    FREQ        = freq_pin;
+    SCK_PIN     = sck_pin;
+    MOSI_PIN    = mosi_pin;
+    MISO_PIN    = miso_pin;
+    SS_PIN      = ss_pin;
+    GDO0        = gd00_pin;
+    Init();
+}
 
 /****************************************************************
 *FUNCTION NAME:SpiWriteReg
@@ -261,6 +268,8 @@ void ELECHOUSE_CC1101::SpiReadBurstReg(byte addr, byte *buffer, byte num)
 ****************************************************************/
 byte ELECHOUSE_CC1101::SpiReadStatus(byte addr) 
 {
+
+    
 	byte value,temp;
 
 	temp = addr | READ_BURST;
@@ -332,7 +341,7 @@ void ELECHOUSE_CC1101::RegConfigSettings(byte f)
     SpiWriteReg(CC1101_IOCFG0,   0x06);  	//asserts when sync word has been sent/received, and de-asserts at the end of the packet 
     SpiWriteReg(CC1101_PKTCTRL1, 0x04);		//two status bytes will be appended to the payload of the packet,including RSSI LQI and CRC OK
 											//No address check
-    SpiWriteReg(CC1101_PKTCTRL0, 0x05);		//whitening off;CRC Enable£»variable length packets, packet length configured by the first byte after sync word
+    SpiWriteReg(CC1101_PKTCTRL0, 0x45);		//whitening on;CRC Enableï¿½ï¿½variable length packets, packet length configured by the first byte after sync word
     SpiWriteReg(CC1101_ADDR,     0x00);		//address used for packet filtration.
     SpiWriteReg(CC1101_PKTLEN,   0x3D); 	//61 bytes max length
 }
@@ -411,8 +420,96 @@ byte ELECHOUSE_CC1101::ReceiveData(byte *rxBuffer)
 	
 }
 
-ELECHOUSE_CC1101 ELECHOUSE_cc1101;
+void ELECHOUSE_CC1101::cc1101_single_wire_start( void )
+{
+    
+    PKTCTRL0_DATA_T pktctrl;
+    pktctrl_org.raw = this->SpiReadReg( CC1101_PKTCTRL0 );
+
+    pktctrl.bits.LENGTH_CONFIG  = PKTCTRL0_LENGTH_CONFIG_INFINITE;
+    pktctrl.bits.CRC_EN         = PKTCTRL0_CRC_EN_DISABLED;
+    pktctrl.bits.PKT_FORMAT     = PKTCTRL0_PKT_FORMAT_SYNCHRONOUS;
+    pktctrl.bits.WHITE_DATA     = PKTCTRL0_WHITE_DATA_OFF;
+
+    this->SpiWriteReg( CC1101_PKTCTRL0, pktctrl.raw );
+    pktctrl.raw = this->SpiReadReg( CC1101_PKTCTRL0 );
+
+    MDMCFG2_DATA_T mdmcfg2;
+
+    mdmcfg2_org.raw = this->SpiReadReg( CC1101_MDMCFG2 );
+
+    mdmcfg2.bits.SYNC_MODE       = 0; // 0 - No preamble/sync, 2 - 16/16 sync word bits detected, 4 - No preamble/sync + carrier sense above threshold 
+    mdmcfg2.bits.MANCHESTER_EN   = 0;
+    mdmcfg2.bits.MOD_FORMAT      = 3;
+    mdmcfg2.bits.DEM_DCFILT_OFF  = 1;
+
+    this->SpiWriteReg( CC1101_MDMCFG2, mdmcfg2.raw );
+    
+    MDMCFG1_DATA_T mdmcfg1;
+
+    mdmcfg1_org.raw = this->SpiReadReg( CC1101_MDMCFG1 );
+
+    mdmcfg1.bits.CHANSPC_E       = 2;
+    mdmcfg1.bits.RESERVED_0      = 0;
+    mdmcfg1.bits.NUM_PREAMBLE    = 0;
+    mdmcfg1.bits.FEC_EN          = 0;
+
+    this->SpiWriteReg( CC1101_MDMCFG1, mdmcfg1.raw );
+
+    IOCFG0_DATA_T iocfg0;
+    iocfg0_org.raw = this->SpiReadReg( CC1101_IOCFG0 );
+    iocfg0.raw = iocfg0_org.raw;
+
+    /*
+    11 (0x0B)   Serial Clock. Synchronous to the data in synchronous serial mode. In RX mode, data is set
+                up on the falling edge by CC1101 when GDOx_INV=0. In TX mode, data is sampled by
+                CC1101 on the rising edge of the serial clock when GDOx_INV=0.
+
+    12 (0x0C)   Serial Synchronous Data Output. Used for serial synchronous mode.
 
 
+    13 (0x0D)   Serial Data Output. Used for asynchronous serial mode. 
+    */
+    iocfg0.bits.GDO0_CFG = 0x0D;
 
+    this->SpiWriteReg( CC1101_IOCFG0, iocfg0.raw ); 
+ 
+    frend0_org = this->SpiReadReg( CC1101_FREND0 );
+    this->SpiWriteReg( CC1101_FREND0,    0x11 );
 
+    for( unsigned int i = 0 ; i < sizeof(PaTabel) ; i++ )
+    {
+        PaTabel[i] = 0x00;
+    }
+    PaTabel[1] = 0xC0;
+    SpiWriteBurstReg(CC1101_PATABLE,PaTabel,8);
+
+    pinMode(GDO0, OUTPUT);
+}
+
+void ELECHOUSE_CC1101::cc1101_single_wire_exit( void )
+{
+    this->SpiWriteReg( CC1101_PKTCTRL0, pktctrl_org.raw );
+    this->SpiWriteReg( CC1101_MDMCFG1,  mdmcfg1_org.raw );
+    this->SpiWriteReg( CC1101_MDMCFG2,  mdmcfg2_org.raw );
+    this->SpiWriteReg( CC1101_IOCFG0,   iocfg0_org.raw  ); 
+    this->SpiWriteReg( CC1101_FREND0,   frend0_org      );
+
+    for( unsigned int i = 0 ; i < sizeof(PaTabel) ; i++ )
+    {
+        PaTabel[i] = 0x60;
+    }
+    SpiWriteBurstReg(CC1101_PATABLE,PaTabel,8);
+
+    pinMode(GDO0, INPUT);
+}
+
+void ELECHOUSE_CC1101::cc1101_single_wire_tx_start( void )
+{
+    this->SpiStrobe( CC1101_STX );
+}
+
+void ELECHOUSE_CC1101::cc1101_single_wire_tx_end( void )
+{
+    this->SpiStrobe( CC1101_SRX );
+}
