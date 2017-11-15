@@ -4,7 +4,7 @@ A clone of the ELECHOUSE_CC1101 https://github.com/simonmonk/CC1101_arduino.git.
 Changes:
 * Initialization with custom pins.
 * Whitening turned on by default.
-* Support single wire compatible mode, to use RCSwitch and Livolo libraries).
+* Support single wire compatible mode, to use RCSwitch and Livolo libraries.
 
 
 # Connecting an Arduino to a CC1101
