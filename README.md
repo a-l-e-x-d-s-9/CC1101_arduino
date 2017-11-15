@@ -87,7 +87,7 @@ ELECHOUSE_cc1101.SendData(buffer, len);
 
 
 
-#Legal
+# Legal
 
 	This library was originally copyright of Michael at elechouse.com but permision was
     granted by Wilson Shen on 2016-10-23 for me (Simon Monk) to uodate the code for Arduino 1.0+
