@@ -1,9 +1,10 @@
 # CC1101_arduino
-A clone of the ELECHOUSE_CC1101 http://www.elechouse.com library updated for Arduino 1.0 plus.
+A clone of the ELECHOUSE_CC1101 https://github.com/simonmonk/CC1101_arduino.git.
 
-I made the following changes to the original library.
-* Changed imports of WProgram.h to Arduino.h in line with Arduino 1.0+
-* Changed the init method so that you have to set the carrier frequency
+Changes:
+* Initialization with custom pins.
+* Whitening turned on by default.
+* Support single wire compatible mode, to use RCSwitch and Livolo libraries).
 
 
 # Connecting an Arduino to a CC1101
@@ -20,7 +21,7 @@ These instructions are for an Arduino Uno.
 |2|GD0|Signals buffer ready to read|
 
 
-![alt text](https://github.com/simonmonk/CC1101_arduino/blob/master/F19_10.png?raw=true_ "Connections")
+![alt text](https://github.com/a-l-e-x-d-s-9/CC1101_arduino/blob/master/F19_10.png?raw=true_ "Connections")
 
 
 # Installing the Library
@@ -30,7 +31,7 @@ To install the library into your IDE:
 * Start the Arduino IDE and from the Sketch menu do Sketch->Include Library->Add ZIP Library and select the ZIP you just downloaded.
 
 
-#API Reference
+# API Reference
 
 This is a very easy library to use. You may just wish to try out the examples, that send a text message from one Arduino to another using the Serial Monitor. But for completeness, here it is:
 
@@ -44,10 +45,27 @@ This is a very easy library to use. You may just wish to try out the examples, t
 
 ## Initialisation
 
-Put this in your setup function.
+Default pins:
+	SCK_PIN    = 13;
+	MISO_PIN   = 12;
+	MOSI_PIN   = 11;
+	SS_PIN     = 10;
+	GDO0       = 8;
+	
+Default frequency: 433 MHz
+
+Choose on of the initialization methods:
 
 ```
-ELECHOUSE_cc1101.Init(F_433); // set frequency - F_433, F_868, F_965 MHz
+// 1. Use default pins and frequency
+ELECHOUSE_cc1101.Init(); 	
+
+// 2. Set frequency - F_433, F_868, F_965 MHz
+ELECHOUSE_cc1101.Init( F_433 );
+
+// 3. Set all pins and frequency: Init( byte freq_pin, byte sck_pin, byte mosi_pin, byte miso_pin, byte ss_pin, byte gd00_pin )
+ELECHOUSE_cc1101.Init( F_433, 13, 11, 12, 10, 8 );
+
 ```
 
 
@@ -85,35 +103,25 @@ SendData requires a buffer of type byte[] and the number of bytes contained in t
 ELECHOUSE_cc1101.SendData(buffer, len);
 ```
 
+## Single wire compatible mode
+To support libraries that use single wire devices to send and receive RF data, for example: 1. rc-switch. 2. Livolo
+
+
+```
+// Enter single wire compatible mode
+ELECHOUSE_cc1101.cc1101_single_wire_start();
+ 
+// Start Tx mode
+ELECHOUSE_cc1101.cc1101_single_wire_tx_start();
+
+// End Tx mode
+ELECHOUSE_cc1101.cc1101_single_wire_tx_end();
+ 
+ // Enter single wire compatible mode
+ELECHOUSE_cc1101.cc1101_single_wire_exit();
+ 
+```
 
 
 # Legal
-
-	This library was originally copyright of Michael at elechouse.com but permision was
-    granted by Wilson Shen on 2016-10-23 for me (Simon Monk) to uodate the code for Arduino 1.0+
-    and release the code on github under the MIT license.
-
-
-Wilson Shen <elechouse@elechouse.com>	23 October 2016 at 02:08
-To: Simon Monk 
-Thanks for your email.
-You are free to put it in github and to do and change.
-
-On Oct 22, 2016 10:07 PM, "Simon Monk" <srmonk@gmail.com> wrote:
-	Hi,
-
-	I'm Simon Monk, I'm currently writing the Electronics Cookbook for O'Reilly. I use your 
-	ELECHOUSE_CC1101 library in a 'recipe'. Your library is by far the easiest to use of 
-	the libraries for this device, but the .h and .cpp file both reference WProgram.h which 
-	as replaced by Arduino.h in Arduino 1.0.
-
-	Rather than have to talk my readers through applying a fix to your library, I'd like 
-	your permission to put the modified lib into Github and add an example from the book. 
-	I would of course provide a link to your website in the book and mention that you can buy 
-	the modules there. If its ok, I'd give the code an MIT OS license, to clarify its use.
-
-	Thanks for a great library,
-
-	Kind Regards,
-
-	Simon Monk.
+MIT license.
