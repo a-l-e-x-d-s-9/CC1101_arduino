@@ -4,7 +4,10 @@ A clone of the ELECHOUSE_CC1101 https://github.com/simonmonk/CC1101_arduino.git.
 Changes:
 * Initialization with custom pins.
 * Whitening turned on by default.
-* Support single wire compatible mode, to use RCSwitch and Livolo libraries.
+* Support single wire compatible mode, to use RCSwitch library.
+
+Issues:
+* Livolo library doesn't work (not sure how to debug it).
 
 
 # Connecting an Arduino to a CC1101
@@ -104,7 +107,7 @@ ELECHOUSE_cc1101.SendData(buffer, len);
 ```
 
 ## Single wire compatible mode
-To support libraries that use single wire devices to send and receive RF data, for example: 1. rc-switch. 2. Livolo
+To support libraries that use single wire devices to send and receive RF data, for example: rc-switch.
 
 
 ```
